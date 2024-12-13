@@ -1,7 +1,6 @@
 *.txt
 *.mp3
-Autopost/client_secret_seed
-Autopost/test.py
-git rm --cached Autopost/CLIENT_ID_REDDIT.txt
-Autopost/CLIENT_ID_REDDIT.txt
-git rm --cached Autopost/client_secret_seed
+.env
+.exe
+.srt
+output/
