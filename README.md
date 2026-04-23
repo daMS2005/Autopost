@@ -5,7 +5,7 @@ Generate short-form Reddit videos with:
 - Reddit post scraping
 - OpenAI voiceover script cleanup
 - Opening Reddit title card rendering
-- gTTS voiceover generation
+- ElevenLabs voiceover generation
 - AssemblyAI subtitle transcription
 - MoviePy subtitle rendering on top of background video
 
@@ -25,10 +25,21 @@ pip install -r requirements.txt
 CLIENT_ID_REDDIT=your_reddit_client_id
 CLIENT_SECRET_REDDIT=your_reddit_client_secret
 ASSEMBLYAI_API_KEY=your_assemblyai_api_key
+ELEVENLABS_API_KEY=your_elevenlabs_api_key
+ELEVENLABS_VOICE_ID=wWWn96OtTHu1sn8SRGEr
+ELEVENLABS_TTS_MODEL=eleven_multilingual_v2
+ELEVENLABS_OUTPUT_FORMAT=mp3_44100_128
+ELEVENLABS_STABILITY=0.45
+ELEVENLABS_SIMILARITY_BOOST=0.8
+ELEVENLABS_STYLE=0
+ELEVENLABS_SPEED=1
+ELEVENLABS_USE_SPEAKER_BOOST=true
 OPENAI_API_KEY=your_openai_api_key
 OPENAI_SCRIPT_MODEL=gpt-5-mini
 SUBREDDIT=AITAH
 ```
+
+`ELEVENLABS_VOICE_ID` defaults to Hale. Swap it for any voice ID from your ElevenLabs voice library.
 
 3. Add one or more background `.mp4` files to the `videos/` folder.
 
@@ -54,7 +65,7 @@ Optional flags:
 
 Rendered assets are written to `output/`:
 
-- `output_*.mp3` for narration
+- `output_*.mp3` for ElevenLabs narration
 - `script_raw_*.txt` for the original Reddit text
 - `script_vocab_*.txt` for deterministic vocabulary replacements before OpenAI
 - `script_cleaned_*.txt` for the OpenAI-polished voiceover script
@@ -70,6 +81,7 @@ Rendered assets are written to `output/`:
 - Final videos render as 9:16 portrait clips, with source footage center-cropped to `1080x1920`.
 - Reddit text gets deterministic vocab cleanup before OpenAI, using `reddit_vocabulary.py` for exact shorthand such as `AITAH`, `WIBTAH`, `TLDR`, and `bc`.
 - OpenAI then lightly polishes for audibility without over-explaining common Reddit notation like `I, 45 M`.
+- ElevenLabs generates narration in chunks for long posts, then the app joins the chunks into one MP3 before transcription.
 - AssemblyAI generates word timestamps, then the app chunks those words into SRT captions using `--chars-per-caption`.
 - Subtitle timings are lightly normalized before rendering so adjacent captions do not visually stack.
 - Subtitles and narration are rendered in one pass so the final video keeps both overlays and audio.

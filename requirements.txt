@@ -1,5 +1,4 @@
 assemblyai
-gtts
 imageio[ffmpeg]
 moviepy
 numpy
