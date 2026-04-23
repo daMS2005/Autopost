@@ -1,0 +1,11 @@
+assemblyai
+gtts
+imageio[ffmpeg]
+moviepy
+numpy
+openai
+pillow
+praw
+pysrt
+python-dotenv
+yt-dlp

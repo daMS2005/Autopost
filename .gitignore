@@ -4,3 +4,9 @@
 .exe
 .srt
 output/
+videos/
+Practice/
+venv/
+__pycache__/
+*.pyc
+.DS_Store
