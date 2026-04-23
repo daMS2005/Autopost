@@ -107,7 +107,7 @@ def _build_voice_settings():
         "stability": _env_float("ELEVENLABS_STABILITY", 0.45),
         "similarity_boost": _env_float("ELEVENLABS_SIMILARITY_BOOST", 0.8),
         "style": _env_float("ELEVENLABS_STYLE", 0),
-        "speed": _env_float("ELEVENLABS_SPEED", 1),
+        "speed": _env_float("ELEVENLABS_SPEED", 1.08),
         "use_speaker_boost": _env_bool("ELEVENLABS_USE_SPEAKER_BOOST", True),
     }
     return {key: value for key, value in settings.items() if value is not None}
