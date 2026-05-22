@@ -7,13 +7,23 @@ from moviepy.video.compositing.CompositeVideoClip import CompositeVideoClip
 from moviepy.video.io.VideoFileClip import VideoFileClip
 
 
-DEFAULT_FONT_PATH = Path(__file__).resolve().parent / "resources" / "Arial.TTF"
+PROJECT_ROOT = Path(__file__).resolve().parent
+DEFAULT_FONT_PATH = PROJECT_ROOT / "resources" / "BebasNeue-Regular.ttf"
+FALLBACK_FONT_PATHS = (
+    PROJECT_ROOT / "resources" / "Arial.TTF",
+)
 PORTRAIT_VIDEO_SIZE = (1080, 1920)
 MIN_SUBTITLE_GAP_SECONDS = 0.08
 MAX_INFERRED_TITLE_CARD_SECONDS = 10.0
 DEFAULT_TITLE_CARD_SECONDS = 5.0
 TITLE_CARD_VIDEO_WIDTH_RATIO = 0.70
 TITLE_CARD_POSITION = ("center", "center")
+DEFAULT_MAX_RENDER_FPS = 60
+DEFAULT_VIDEO_CRF = 16
+DEFAULT_AUDIO_BITRATE = "192k"
+SUBTITLE_FONT_SIZE_RATIO = 0.065
+SUBTITLE_MIN_FONT_SIZE = 42
+SUBTITLE_VERTICAL_POSITION_RATIO = 0.69
 
 
 def resolve_font_path(font_path=None):
@@ -23,11 +33,12 @@ def resolve_font_path(font_path=None):
             raise FileNotFoundError(f"Subtitle font not found: {resolved_font}")
         return str(resolved_font)
 
-    if DEFAULT_FONT_PATH.exists():
-        return str(DEFAULT_FONT_PATH)
+    for candidate in (DEFAULT_FONT_PATH, *FALLBACK_FONT_PATHS):
+        if candidate.exists():
+            return str(candidate)
 
     raise FileNotFoundError(
-        "No subtitle font was found. Pass --font-path or add resources/Arial.TTF."
+        "No subtitle font was found. Pass --font-path or add a fallback font."
     )
 
 
@@ -39,8 +50,8 @@ def normalize_subtitle_timing(subtitles, min_gap_seconds=MIN_SUBTITLE_GAP_SECOND
     """
     Prevent adjacent captions from rendering on top of each other.
 
-    AssemblyAI can emit very tight caption boundaries. We leave the start times
-    intact for sync, but shorten each caption slightly when it touches the next.
+    Generated caption files can emit very tight caption boundaries. We leave the
+    start times intact for sync, but shorten each caption slightly when it touches the next.
     """
     normalized = list(subtitles)
 
@@ -103,8 +114,13 @@ def fit_video_to_portrait(video, target_size=PORTRAIT_VIDEO_SIZE):
     )
 
 
+def resolve_render_fps(video):
+    source_fps = getattr(video, "fps", None) or DEFAULT_MAX_RENDER_FPS
+    return max(24, min(int(round(source_fps)), DEFAULT_MAX_RENDER_FPS))
+
+
 def add_subtitles_to_video(
-    video_path,
+    video_source,
     subtitles_path,
     output_path,
     audio_path=None,
@@ -118,7 +134,12 @@ def add_subtitles_to_video(
     output_file = Path(output_path).expanduser().resolve()
     output_file.parent.mkdir(parents=True, exist_ok=True)
 
-    video = VideoFileClip(video_path)
+    owns_video = isinstance(video_source, (str, Path))
+    video = (
+        VideoFileClip(str(Path(video_source).expanduser().resolve()))
+        if owns_video
+        else video_source
+    )
     background_clip = None
     narration_clip = None
     final_video = None
@@ -135,9 +156,9 @@ def add_subtitles_to_video(
             if title_card_path
             else 0
         )
-        font_size = max(38, int(canvas_width * 0.06))
+        font_size = max(SUBTITLE_MIN_FONT_SIZE, int(canvas_width * SUBTITLE_FONT_SIZE_RATIO))
         text_width = int(canvas_width * 0.82)
-        y_position = int(canvas_height * 0.74)
+        y_position = int(canvas_height * SUBTITLE_VERTICAL_POSITION_RATIO)
         line_spacing = max(10, int(font_size * 0.3))
 
         for subtitle in subtitles:
@@ -180,6 +201,8 @@ def add_subtitles_to_video(
         else:
             render_duration = background_clip.duration
 
+        render_fps = resolve_render_fps(video)
+
         overlay_clips = [background_clip]
 
         if title_card_path:
@@ -203,8 +226,19 @@ def add_subtitles_to_video(
             str(output_file),
             codec="libx264",
             audio_codec="aac",
+            audio_bitrate=DEFAULT_AUDIO_BITRATE,
             threads=4,
-            fps=video.fps or 24,
+            fps=render_fps,
+            ffmpeg_params=[
+                "-preset",
+                "slow",
+                "-crf",
+                str(DEFAULT_VIDEO_CRF),
+                "-pix_fmt",
+                "yuv420p",
+                "-movflags",
+                "+faststart",
+            ],
         )
     finally:
         for clip in text_clips:
@@ -222,4 +256,5 @@ def add_subtitles_to_video(
         if background_clip is not None:
             background_clip.close()
 
-        video.close()
+        if owns_video:
+            video.close()

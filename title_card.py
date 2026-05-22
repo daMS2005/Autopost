@@ -5,7 +5,10 @@ from PIL import Image, ImageDraw, ImageFont
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 DEFAULT_TEMPLATE_PATH = PROJECT_ROOT / "official_image.png"
-DEFAULT_FONT_PATH = "/System/Library/Fonts/Supplemental/Arial Bold.ttf"
+DEFAULT_FONT_PATH = Path("/System/Library/Fonts/Supplemental/Arial Bold.ttf")
+FALLBACK_FONT_PATHS = (
+    PROJECT_ROOT / "resources" / "Arial.TTF",
+)
 TITLE_BOX = (58, 160, 802, 286)
 MAX_TITLE_LINES = 4
 MAX_TITLE_FONT_SIZE = 40
@@ -14,10 +17,13 @@ TITLE_FILL = (20, 20, 20, 255)
 
 
 def load_font(font_size):
-    try:
-        return ImageFont.truetype(DEFAULT_FONT_PATH, font_size)
-    except OSError:
-        return ImageFont.truetype(str(PROJECT_ROOT / "resources" / "Arial.TTF"), font_size)
+    for font_path in (DEFAULT_FONT_PATH, *FALLBACK_FONT_PATHS):
+        try:
+            return ImageFont.truetype(str(font_path), font_size)
+        except OSError:
+            continue
+
+    raise OSError("No usable font was found for rendering the title card.")
 
 
 def text_width(draw, text, font):

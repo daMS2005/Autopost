@@ -1,11 +1,5 @@
-import os
+import re
 from pathlib import Path
-
-import assemblyai as aai
-from dotenv import load_dotenv
-
-
-load_dotenv()
 
 
 def format_srt_timestamp(seconds):
@@ -17,28 +11,127 @@ def format_srt_timestamp(seconds):
 
 
 def clean_caption_text(text):
-    return " ".join(text.replace("\n", " ").split()).strip()
+    return " ".join(str(text).replace("\n", " ").split()).strip()
 
 
-def _word_text(word):
-    return clean_caption_text(getattr(word, "text", "") or "")
+def _strip_nonspoken_markup(text):
+    stripped = re.sub(r"\[[^\]]*\]", " ", str(text))
+    stripped = re.sub(r"<[^>]*>", " ", stripped)
+    return clean_caption_text(stripped)
 
 
-def _word_start_seconds(word):
-    start = getattr(word, "start", None)
-    if start is None:
+def _normalize_match_token(token):
+    normalized = re.sub(r"(^[^\w']+|[^\w']+$)", "", str(token).lower())
+    return normalized.strip("_")
+
+
+def extract_spoken_tokens(text):
+    stripped = _strip_nonspoken_markup(text)
+    return [
+        normalized
+        for normalized in (_normalize_match_token(part) for part in stripped.split())
+        if normalized
+    ]
+
+
+def estimate_spoken_text_end(words, text):
+    """
+    Estimate when a known leading spoken phrase finishes in the generated word timings.
+    """
+    target_tokens = extract_spoken_tokens(text)
+    if not target_tokens:
         return None
-    return float(start) / 1000
+
+    remaining_tokens = list(target_tokens)
+
+    for word in words:
+        spoken_token = _normalize_match_token(word.get("text", ""))
+        if not spoken_token:
+            continue
+
+        if spoken_token != remaining_tokens[0]:
+            break
+
+        remaining_tokens.pop(0)
+        if not remaining_tokens:
+            return float(word.get("end", 0) or 0)
+
+    return None
 
 
-def _word_end_seconds(word):
-    end = getattr(word, "end", None)
-    if end is None:
-        return None
-    return float(end) / 1000
+def _iter_spoken_characters(alignment):
+    characters = alignment.get("characters") or []
+    starts = alignment.get("character_start_times_seconds") or []
+    ends = alignment.get("character_end_times_seconds") or []
+
+    square_bracket_depth = 0
+    angle_bracket_depth = 0
+
+    for char, start, end in zip(characters, starts, ends):
+        if char == "[":
+            square_bracket_depth += 1
+            continue
+        if char == "]" and square_bracket_depth > 0:
+            square_bracket_depth -= 1
+            continue
+        if char == "<":
+            angle_bracket_depth += 1
+            continue
+        if char == ">" and angle_bracket_depth > 0:
+            angle_bracket_depth -= 1
+            continue
+        if square_bracket_depth or angle_bracket_depth:
+            continue
+
+        yield char, float(start), float(end)
 
 
-def build_srt_from_words(words, chars_per_caption):
+def build_word_timings_from_character_alignment(alignment, time_offset=0.0):
+    """
+    Convert ElevenLabs character-level timings into word-level timings.
+    """
+    words = []
+    current_characters = []
+    current_start = None
+    current_end = None
+
+    for char, start, end in _iter_spoken_characters(alignment):
+        if char.isspace():
+            if current_characters:
+                word_text = clean_caption_text("".join(current_characters))
+                if word_text:
+                    words.append(
+                        {
+                            "text": word_text,
+                            "start": current_start + time_offset,
+                            "end": current_end + time_offset,
+                        }
+                    )
+                current_characters = []
+                current_start = None
+                current_end = None
+            continue
+
+        if current_start is None:
+            current_start = start
+        current_characters.append(char)
+        current_end = end
+
+    if current_characters:
+        word_text = clean_caption_text("".join(current_characters))
+        if word_text:
+            words.append(
+                {
+                    "text": word_text,
+                    "start": current_start + time_offset,
+                    "end": current_end + time_offset,
+                }
+            )
+
+    return words
+
+
+def build_srt_from_word_timings(words, chars_per_caption):
     captions = []
     current_words = []
     current_start = None
@@ -46,9 +139,9 @@ def build_srt_from_words(words, chars_per_caption):
     max_chars = max(8, chars_per_caption)
 
     for word in words:
-        text = _word_text(word)
-        start = _word_start_seconds(word)
-        end = _word_end_seconds(word)
+        text = clean_caption_text(word.get("text", ""))
+        start = word.get("start")
+        end = word.get("end")
         if not text or start is None or end is None:
             continue
 
@@ -71,9 +164,9 @@ def build_srt_from_words(words, chars_per_caption):
             current_start = None
 
         if current_start is None:
-            current_start = start
+            current_start = float(start)
         current_words.append(text)
-        current_end = end
+        current_end = float(end)
 
         if text.endswith((".", "!", "?")):
             captions.append(
@@ -108,34 +201,8 @@ def build_srt_from_words(words, chars_per_caption):
     ) + ("\n" if captions else "")
 
 
-def request_assemblyai_transcription(filepath):
-    api_key = os.getenv("ASSEMBLYAI_API_KEY")
-    if not api_key:
-        raise RuntimeError("Missing ASSEMBLYAI_API_KEY.")
-
-    aai.settings.api_key = api_key
-    transcript = aai.Transcriber().transcribe(filepath)
-
-    if transcript.status == aai.TranscriptStatus.error:
-        raise RuntimeError(f"AssemblyAI transcription failed: {transcript.error}")
-
-    return transcript
-
-
-def transcribe_audio(filepath, output_path, chars_per_caption=15):
-    """
-    Transcribe an audio file with AssemblyAI and save subtitles in SRT format.
-    """
-    transcript = request_assemblyai_transcription(filepath)
-    subtitles = build_srt_from_words(
-        getattr(transcript, "words", []) or [],
-        chars_per_caption=chars_per_caption,
-    )
-    if not subtitles:
-        raise RuntimeError("AssemblyAI returned no timestamped words for subtitles.")
-
+def write_srt(subtitles, output_path):
     output_file = Path(output_path).expanduser()
     output_file.parent.mkdir(parents=True, exist_ok=True)
     output_file.write_text(subtitles, encoding="utf-8")
-
     return subtitles
