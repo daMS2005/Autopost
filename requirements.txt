@@ -1,0 +1,13 @@
+google-api-python-client
+google-auth-httplib2
+google-auth-oauthlib
+imageio[ffmpeg]
+moviepy
+numpy
+openai
+pillow
+playwright
+praw
+pysrt
+python-dotenv
+yt-dlp

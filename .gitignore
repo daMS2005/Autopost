@@ -1,7 +1,50 @@
-*.txt
+# Secrets and local credentials
+.env
+.env.*
+!.env.example
+client_secrets.json
+token.json
+AssemblyAIkey.txt
+CLIENT_ID_REDDIT.txt
+client_secret_seed.txt
+
+# Python
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*.pyo
+.python-version
+
+# Generated media and render outputs
+output/
+videos/
 *.mp3
-Autopost/client_secret_seed
-Autopost/test.py
-git rm --cached Autopost/CLIENT_ID_REDDIT.txt
-Autopost/CLIENT_ID_REDDIT.txt
-git rm --cached Autopost/client_secret_seed
+*.mp4
+*.wav
+*.srt
+*.vtt
+*TEMP_MPY*
+
+# Local runtime state
+data/
+web-posting/data/
+Practice/
+
+# Social/browser tokens and profiles
+data/social/
+data/browser_profiles/
+**/browser_profiles/
+**/Cookies*
+**/Login Data*
+**/Local State
+**/Preferences
+
+# OS/editor noise
+.DS_Store
+.idea/
+.vscode/
+
+# Scratch text outputs
+*.txt
+!README*.txt
