@@ -38,7 +38,7 @@ def build_parser():
     tiktok_exchange.add_argument("--code", required=True)
     tiktok_exchange.add_argument("--code-verifier", default=None)
 
-    tiktok_info = subparsers.add_parser("tiktok-creator-info")
+    subparsers.add_parser("tiktok-creator-info")
 
     prepare_video = subparsers.add_parser("prepare-video")
     prepare_video.add_argument("--video-path", required=True)
@@ -335,9 +335,7 @@ def parse_schedule_at(value):
     try:
         return datetime.fromisoformat(value.replace("Z", "+00:00")).replace(tzinfo=None)
     except ValueError as exc:
-        raise ValueError(
-            "Schedule time must look like '2026-05-22 18:30' or ISO format."
-        ) from exc
+        raise ValueError("Schedule time must look like '2026-05-22 18:30' or ISO format.") from exc
 
 
 def part_schedule_time(first_schedule_at, index, gap_minutes):
@@ -446,9 +444,7 @@ def build_weekly_category_plan(args):
     publish_root = Path(args.publish_root).expanduser().resolve() / start_date.isoformat()
 
     missing = [
-        subreddit
-        for subreddit in subreddits
-        if len(posts_by_subreddit.get(subreddit, [])) < days
+        subreddit for subreddit in subreddits if len(posts_by_subreddit.get(subreddit, [])) < days
     ]
     if missing:
         details = ", ".join(
@@ -636,7 +632,17 @@ def main():
             redirect_uri=args.redirect_uri,
             code_verifier=args.code_verifier,
         )
-        print(json.dumps(tokens, indent=2))
+        print(
+            json.dumps(
+                {
+                    "status": "authorized",
+                    "token_file": str(publisher.token_file),
+                    "expires_in": tokens.get("expires_in"),
+                    "scope": tokens.get("scope"),
+                },
+                indent=2,
+            )
+        )
         return
 
     if args.command == "tiktok-creator-info":
@@ -823,10 +829,10 @@ def main():
                     schedule_at=args.schedule_at,
                 )
         cleanup_deleted = []
-        if (
-            args.cleanup_after_success
-            and str(response.get("status") or "").lower() in {"shared", "scheduled"}
-        ):
+        if args.cleanup_after_success and str(response.get("status") or "").lower() in {
+            "shared",
+            "scheduled",
+        }:
             cleanup_deleted = cleanup_manifest_after_success(manifest, [part])
         print(json.dumps({**response, "cleanup_deleted": cleanup_deleted}, indent=2))
         return

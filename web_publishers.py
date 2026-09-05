@@ -8,7 +8,6 @@ from dotenv import load_dotenv
 
 from video_splitter import load_post_metadata_for_video
 
-
 load_dotenv()
 
 PROJECT_ROOT = Path(__file__).resolve().parent
@@ -237,7 +236,9 @@ class TikTokWebPublisher(BrowserPublisher):
         page.goto(TIKTOK_UPLOAD_URL, wait_until="domcontentloaded")
         page.wait_for_load_state("networkidle")
 
-        if "/login" not in page.url and not page.locator("text=Log in").first.is_visible(timeout=1000):
+        if "/login" not in page.url and not page.locator("text=Log in").first.is_visible(
+            timeout=1000
+        ):
             return
 
         page.goto(TIKTOK_EMAIL_LOGIN_URL, wait_until="domcontentloaded")
@@ -359,7 +360,6 @@ class InstagramWebPublisher(BrowserPublisher):
                 self._debug_snapshot("06-username-filled")
             except Exception:
                 self._debug_snapshot("06-username-fill-failed")
-                pass
 
         if self.password:
             try:
@@ -391,11 +391,12 @@ class InstagramWebPublisher(BrowserPublisher):
                 self._debug_snapshot("08-login-clicked")
             except Exception:
                 self._debug_snapshot("08-login-click-failed")
-                pass
 
-        print("[Instagram] Complete any login/captcha/2FA in the browser — will continue automatically once logged in...")
+        print(
+            "[Instagram] Complete any login/captcha/2FA in the browser — will continue automatically once logged in..."
+        )
         page.wait_for_function(
-            "() => !window.location.href.includes('/accounts/login') || document.querySelector('[aria-label=\"Create\"], [aria-label=\"New post\"], a[href=\"/create/style/\"], a[href=\"/direct/inbox/\"]')",
+            '() => !window.location.href.includes(\'/accounts/login\') || document.querySelector(\'[aria-label="Create"], [aria-label="New post"], a[href="/create/style/"], a[href="/direct/inbox/"]\')',
             timeout=600000,
         )
         time.sleep(3)
@@ -458,7 +459,9 @@ class InstagramWebPublisher(BrowserPublisher):
                 }"""
             )
             json_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
-            print(f"[Instagram][debug] {label}: {summary.get('url')} -> {screenshot_path}", flush=True)
+            print(
+                f"[Instagram][debug] {label}: {summary.get('url')} -> {screenshot_path}", flush=True
+            )
         except Exception as exc:
             print(f"[Instagram][debug] {label}: snapshot failed: {exc}", flush=True)
 
@@ -535,7 +538,9 @@ class InstagramWebPublisher(BrowserPublisher):
         self._debug_snapshot("11-create-menu-open")
         create_box = None
         try:
-            create_box = self.page.locator("a:has-text('Create'), [aria-label='Create']").first.bounding_box()
+            create_box = self.page.locator(
+                "a:has-text('Create'), [aria-label='Create']"
+            ).first.bounding_box()
         except Exception:
             pass
         if create_box:
@@ -587,7 +592,9 @@ class InstagramWebPublisher(BrowserPublisher):
         time.sleep(2)
         self._debug_snapshot("11b-post-menu-clicked-js")
         if not clicked:
-            raise RuntimeError("Instagram Create menu opened, but no visible Post option was found.")
+            raise RuntimeError(
+                "Instagram Create menu opened, but no visible Post option was found."
+            )
 
     def _has_upload_prompt(self):
         try:
@@ -771,7 +778,9 @@ class InstagramWebPublisher(BrowserPublisher):
         self._debug_snapshot("15c-cover-uploaded")
         if not self._click_text_candidate(["Done", "Apply"], timeout_ms=10000):
             self._debug_snapshot("15d-cover-done-missing")
-            raise RuntimeError("Instagram cover image was uploaded, but no Done/Apply button was found.")
+            raise RuntimeError(
+                "Instagram cover image was uploaded, but no Done/Apply button was found."
+            )
         time.sleep(1)
         self._debug_snapshot("15e-cover-done")
 

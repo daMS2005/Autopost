@@ -1,6 +1,5 @@
 import re
 
-
 # Exact Reddit shorthand replacements applied before the OpenAI polish step.
 # Add new entries here when a phrase sounds awkward in TTS.
 VOCAB_REPLACEMENTS = {

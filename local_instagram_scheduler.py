@@ -14,9 +14,7 @@ from publish_cli import (
     upload_manifest_parts_to_instagram,
 )
 from video_splitter import load_post_metadata_for_video, sanitize_slug
-from web_publishers import InstagramWebPublisher
-from web_publishers import load_manifest
-
+from web_publishers import InstagramWebPublisher, load_manifest
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 DEFAULT_QUEUE_PATH = PROJECT_ROOT / "data" / "local_schedules" / "instagram_queue.json"
@@ -138,7 +136,9 @@ def schedule_single_video(args):
     subreddit = args.subreddit or metadata.get("subreddit") or "instagram"
     run_at = parse_datetime(args.run_at) or now_local()
     manifest_root = Path(args.publish_root).expanduser().resolve()
-    manifest_dir = manifest_root / run_at.date().isoformat() / category / subreddit / sanitize_slug(title)
+    manifest_dir = (
+        manifest_root / run_at.date().isoformat() / category / subreddit / sanitize_slug(title)
+    )
 
     queued = {
         "id": None,
@@ -267,7 +267,11 @@ def cleanup_source_render_files(item):
 
     for directory in sorted({Path(path).parent for path in seen}, reverse=True):
         try:
-            if directory.exists() and is_inside_project_output(directory) and not any(directory.iterdir()):
+            if (
+                directory.exists()
+                and is_inside_project_output(directory)
+                and not any(directory.iterdir())
+            ):
                 directory.rmdir()
                 deleted.append(str(directory))
         except Exception:
@@ -318,7 +322,9 @@ def run_due_items(args):
                         manifest.get("parts", []),
                     )
                 source_cleanup_deleted = []
-                if item.get("cleanup_source_after_success") and successful_publish_responses(responses):
+                if item.get("cleanup_source_after_success") and successful_publish_responses(
+                    responses
+                ):
                     source_cleanup_deleted = cleanup_source_render_files(item)
                 item["status"] = "posted" if successful_publish_responses(responses) else "failed"
                 item["completed_at"] = now_local().isoformat(timespec="seconds")
@@ -327,9 +333,13 @@ def run_due_items(args):
                 item["cleanup_deleted"] = cleanup_deleted
                 item["source_cleanup_deleted"] = source_cleanup_deleted
                 results.append(item)
-                append_log(f"Finished {item['subreddit']} with status {item['status']}.", args.log_path)
+                append_log(
+                    f"Finished {item['subreddit']} with status {item['status']}.", args.log_path
+                )
             except Exception as exc:
-                item["status"] = "retry" if item["attempts"] < int(args.max_attempts or 3) else "failed"
+                item["status"] = (
+                    "retry" if item["attempts"] < int(args.max_attempts or 3) else "failed"
+                )
                 item["last_error"] = str(exc)
                 item["completed_at"] = now_local().isoformat(timespec="seconds")
                 results.append(item)
@@ -393,5 +403,7 @@ def wake_commands_for_queue(args):
         if run_at is None or run_at <= now_local():
             continue
         wake_at = run_at - timedelta(minutes=lead_minutes)
-        commands.append(f"sudo pmset schedule wakeorpoweron \"{wake_at.strftime('%m/%d/%y %H:%M:%S')}\"")
+        commands.append(
+            f'sudo pmset schedule wakeorpoweron "{wake_at.strftime("%m/%d/%y %H:%M:%S")}"'
+        )
     return commands

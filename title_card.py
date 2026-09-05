@@ -2,13 +2,10 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
-
 PROJECT_ROOT = Path(__file__).resolve().parent
-DEFAULT_TEMPLATE_PATH = PROJECT_ROOT / "official_image.png"
-DEFAULT_FONT_PATH = Path("/System/Library/Fonts/Supplemental/Arial Bold.ttf")
-FALLBACK_FONT_PATHS = (
-    PROJECT_ROOT / "resources" / "Arial.TTF",
-)
+DEFAULT_TEMPLATE_PATH = PROJECT_ROOT / "assets" / "brand" / "title-card-template.png"
+DEFAULT_FONT_PATH = PROJECT_ROOT / "assets" / "fonts" / "Inter-Variable.ttf"
+FALLBACK_FONT_PATHS = (Path("/System/Library/Fonts/Supplemental/Arial Bold.ttf"),)
 TITLE_BOX = (58, 160, 802, 286)
 MAX_TITLE_LINES = 4
 MAX_TITLE_FONT_SIZE = 40
@@ -104,7 +101,7 @@ def render_title_card(title, output_path, template_path=None):
     total_height = sum(line_heights) + line_gap * max(0, len(lines) - 1)
     y = top + max(0, (max_height - total_height) // 2)
 
-    for line, line_height in zip(lines, line_heights):
+    for line, line_height in zip(lines, line_heights, strict=True):
         bbox = text_bounds(draw, line, font)
         line_width = bbox[2] - bbox[0]
         x = left + max(0, (max_width - line_width) // 2)

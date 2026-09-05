@@ -2,16 +2,13 @@ from pathlib import Path
 
 import pysrt
 from moviepy.audio.io.AudioFileClip import AudioFileClip
-from moviepy.video.VideoClip import ImageClip, TextClip
 from moviepy.video.compositing.CompositeVideoClip import CompositeVideoClip
 from moviepy.video.io.VideoFileClip import VideoFileClip
-
+from moviepy.video.VideoClip import ImageClip, TextClip
 
 PROJECT_ROOT = Path(__file__).resolve().parent
-DEFAULT_FONT_PATH = PROJECT_ROOT / "resources" / "BebasNeue-Regular.ttf"
-FALLBACK_FONT_PATHS = (
-    PROJECT_ROOT / "resources" / "Arial.TTF",
-)
+DEFAULT_FONT_PATH = PROJECT_ROOT / "assets" / "fonts" / "BebasNeue-Regular.ttf"
+FALLBACK_FONT_PATHS = (PROJECT_ROOT / "assets" / "fonts" / "Inter-Variable.ttf",)
 PORTRAIT_VIDEO_SIZE = (1080, 1920)
 MIN_SUBTITLE_GAP_SECONDS = 0.08
 MAX_INFERRED_TITLE_CARD_SECONDS = 10.0
@@ -37,9 +34,7 @@ def resolve_font_path(font_path=None):
         if candidate.exists():
             return str(candidate)
 
-    raise FileNotFoundError(
-        "No subtitle font was found. Pass --font-path or add a fallback font."
-    )
+    raise FileNotFoundError("No subtitle font was found. Pass --font-path or add a fallback font.")
 
 
 def seconds_to_subrip_time(seconds):
@@ -103,20 +98,17 @@ def fit_video_to_portrait(video, target_size=PORTRAIT_VIDEO_SIZE):
     resized_width = int(video.w * scale)
     resized_height = int(video.h * scale)
 
-    return (
-        video.resized((resized_width, resized_height))
-        .cropped(
-            x_center=resized_width / 2,
-            y_center=resized_height / 2,
-            width=target_width,
-            height=target_height,
-        )
+    return video.resized((resized_width, resized_height)).cropped(
+        x_center=resized_width / 2,
+        y_center=resized_height / 2,
+        width=target_width,
+        height=target_height,
     )
 
 
 def resolve_render_fps(video):
     source_fps = getattr(video, "fps", None) or DEFAULT_MAX_RENDER_FPS
-    return max(24, min(int(round(source_fps)), DEFAULT_MAX_RENDER_FPS))
+    return max(24, min(round(source_fps), DEFAULT_MAX_RENDER_FPS))
 
 
 def add_subtitles_to_video(
@@ -152,9 +144,7 @@ def add_subtitles_to_video(
         font = resolve_font_path(font_path)
         subtitles = normalize_subtitle_timing(pysrt.open(subtitles_path))
         active_title_card_duration = (
-            infer_title_card_duration(subtitles, title_card_duration)
-            if title_card_path
-            else 0
+            infer_title_card_duration(subtitles, title_card_duration) if title_card_path else 0
         )
         font_size = max(SUBTITLE_MIN_FONT_SIZE, int(canvas_width * SUBTITLE_FONT_SIZE_RATIO))
         text_width = int(canvas_width * 0.82)

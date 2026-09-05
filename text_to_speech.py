@@ -20,7 +20,6 @@ from transcriber import (
 )
 from voice_registry import strip_voice_marker, voice_id_for_name
 
-
 load_dotenv()
 
 ELEVENLABS_TTS_URL = "https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
@@ -96,9 +95,7 @@ def is_v3_model(model_id=None):
 
 def get_default_max_chars(model_id=None):
     return (
-        DEFAULT_ELEVENLABS_V3_MAX_CHARS
-        if is_v3_model(model_id)
-        else DEFAULT_ELEVENLABS_MAX_CHARS
+        DEFAULT_ELEVENLABS_V3_MAX_CHARS if is_v3_model(model_id) else DEFAULT_ELEVENLABS_MAX_CHARS
     )
 
 
@@ -244,9 +241,7 @@ def _build_request_payload(text, previous_text=None, next_text=None, category="s
         "text": text,
         "model_id": model_id,
         "voice_settings": _build_voice_settings(category=category),
-        "apply_text_normalization": os.getenv(
-            "ELEVENLABS_APPLY_TEXT_NORMALIZATION", "auto"
-        ),
+        "apply_text_normalization": os.getenv("ELEVENLABS_APPLY_TEXT_NORMALIZATION", "auto"),
     }
 
     language_code = os.getenv("ELEVENLABS_LANGUAGE_CODE")
@@ -278,9 +273,7 @@ def _elevenlabs_tts_request(
     if not api_key:
         raise RuntimeError("Missing ELEVENLABS_API_KEY.")
 
-    output_format = os.getenv(
-        "ELEVENLABS_OUTPUT_FORMAT", DEFAULT_ELEVENLABS_OUTPUT_FORMAT
-    )
+    output_format = os.getenv("ELEVENLABS_OUTPUT_FORMAT", DEFAULT_ELEVENLABS_OUTPUT_FORMAT)
     query = {
         "output_format": output_format,
         "enable_logging": str(_env_bool("ELEVENLABS_ENABLE_LOGGING", True)).lower(),
@@ -310,9 +303,7 @@ def _elevenlabs_tts_request(
             return response.read()
     except HTTPError as exc:
         error_body = exc.read().decode("utf-8", errors="replace")
-        raise RuntimeError(
-            f"ElevenLabs TTS failed with HTTP {exc.code}: {error_body}"
-        ) from exc
+        raise RuntimeError(f"ElevenLabs TTS failed with HTTP {exc.code}: {error_body}") from exc
     except URLError as exc:
         raise RuntimeError(f"ElevenLabs TTS request failed: {exc}") from exc
 
@@ -330,9 +321,7 @@ def _elevenlabs_tts_with_timestamps_request(
     if not api_key:
         raise RuntimeError("Missing ELEVENLABS_API_KEY.")
 
-    output_format = os.getenv(
-        "ELEVENLABS_OUTPUT_FORMAT", DEFAULT_ELEVENLABS_OUTPUT_FORMAT
-    )
+    output_format = os.getenv("ELEVENLABS_OUTPUT_FORMAT", DEFAULT_ELEVENLABS_OUTPUT_FORMAT)
     query = {
         "output_format": output_format,
         "enable_logging": str(_env_bool("ELEVENLABS_ENABLE_LOGGING", True)).lower(),
@@ -428,7 +417,9 @@ def _generate_words_and_audio_for_text(
             effective_voice_name,
         )
 
-    with tempfile.TemporaryDirectory(prefix="elevenlabs_parts_", dir=output_file.parent) as temp_dir:
+    with tempfile.TemporaryDirectory(
+        prefix="elevenlabs_parts_", dir=output_file.parent
+    ) as temp_dir:
         part_paths = []
         time_offset = 0.0
 
@@ -524,7 +515,9 @@ def generate_voiceover_and_subtitles(
     part_paths = []
     segment_voice_choices = []
 
-    with tempfile.TemporaryDirectory(prefix="elevenlabs_segments_", dir=output_file.parent) as temp_dir:
+    with tempfile.TemporaryDirectory(
+        prefix="elevenlabs_segments_", dir=output_file.parent
+    ) as temp_dir:
         time_offset = 0.0
 
         for index, segment in enumerate(segments):
@@ -533,14 +526,16 @@ def generate_voiceover_and_subtitles(
                 continue
 
             part_path = Path(temp_dir) / f"segment_{index:03}.mp3"
-            segment_words, segment_duration, selected_voice_id, resolved_voice_name = _generate_words_and_audio_for_text(
-                segment_text,
-                part_path,
-                voice_id=segment.get("voice_id") or voice_id,
-                voice_name=segment.get("voice_name"),
-                voice_gender=segment.get("voice_gender") or voice_gender,
-                category=category,
-                speaker_index=index,
+            segment_words, segment_duration, selected_voice_id, resolved_voice_name = (
+                _generate_words_and_audio_for_text(
+                    segment_text,
+                    part_path,
+                    voice_id=segment.get("voice_id") or voice_id,
+                    voice_name=segment.get("voice_name"),
+                    voice_gender=segment.get("voice_gender") or voice_gender,
+                    category=category,
+                    speaker_index=index,
+                )
             )
             part_paths.append(part_path)
             segment_voice_choices.append(

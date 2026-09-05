@@ -1,0 +1,17 @@
+.git
+.github
+.venv
+__pycache__
+*.py[cod]
+.env
+.env.*
+!.env.example
+data
+output
+videos
+*.mp3
+*.mp4
+*.wav
+*.srt
+*.vtt
+voice_lab.ipynb

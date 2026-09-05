@@ -67,7 +67,7 @@ def _iter_spoken_characters(alignment):
     square_bracket_depth = 0
     angle_bracket_depth = 0
 
-    for char, start, end in zip(characters, starts, ends):
+    for char, start, end in zip(characters, starts, ends, strict=False):
         if char == "[":
             square_bracket_depth += 1
             continue

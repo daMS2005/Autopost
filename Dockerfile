@@ -1,17 +1,23 @@
-FROM python:3.13-slim
+FROM python:3.13-slim-bookworm
 
 WORKDIR /usr/src/app
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    ffmpeg \
-    libsm6 \
-    libxext6 \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
 
-RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
+RUN python -m pip install --upgrade pip \
+    && python -m pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+RUN useradd --create-home --uid 10001 appuser
 
-CMD ["python", "main.py"]
+COPY --chown=appuser:appuser . .
+
+USER appuser
+
+ENTRYPOINT ["python", "main.py"]

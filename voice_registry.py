@@ -1,6 +1,5 @@
 import re
 
-
 VOICE_MARKER_PATTERN = re.compile(r"^\s*<<VOICE:\s*([^>]+?)\s*>>\s*", re.IGNORECASE)
 
 VOICE_CATALOG = {

@@ -10,7 +10,6 @@ from urllib.request import Request, urlopen
 
 from dotenv import load_dotenv
 
-
 load_dotenv()
 
 PROJECT_ROOT = Path(__file__).resolve().parent
@@ -87,7 +86,14 @@ def build_publish_metadata(
     )
 
 
-def _json_request(url: str, *, method: str = "GET", payload: dict[str, Any] | None = None, headers: dict[str, str] | None = None, timeout: int = 240) -> dict[str, Any]:
+def _json_request(
+    url: str,
+    *,
+    method: str = "GET",
+    payload: dict[str, Any] | None = None,
+    headers: dict[str, str] | None = None,
+    timeout: int = 240,
+) -> dict[str, Any]:
     body = None
     merged_headers = dict(headers or {})
     if payload is not None:
@@ -188,6 +194,7 @@ class TikTokPublisher:
 
     def save_tokens(self, tokens: dict[str, Any]) -> Path:
         self.token_file.write_text(json.dumps(tokens, indent=2), encoding="utf-8")
+        self.token_file.chmod(0o600)
         return self.token_file
 
     def _authorized_headers(self) -> dict[str, str]:
@@ -243,9 +250,7 @@ class TikTokPublisher:
             },
         }
         if video_cover_timestamp_ms is not None:
-            payload["post_info"]["video_cover_timestamp_ms"] = int(
-                video_cover_timestamp_ms
-            )
+            payload["post_info"]["video_cover_timestamp_ms"] = int(video_cover_timestamp_ms)
         return _json_request(
             TIKTOK_DIRECT_POST_INIT_URL,
             method="POST",
@@ -343,8 +348,7 @@ class YouTubePublisher:
                 port=0,
                 open_browser=False,
                 authorization_prompt_message=(
-                    "Open this URL in your browser to authorize YouTube upload access: "
-                    "{url}"
+                    "Open this URL in your browser to authorize YouTube upload access: {url}"
                 ),
                 success_message=(
                     "YouTube authorization completed. You can close this browser tab."

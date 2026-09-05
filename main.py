@@ -31,7 +31,6 @@ from title_card import DEFAULT_TEMPLATE_PATH, render_title_card
 from video_downloader import VideoManager
 from voice_registry import default_voice_name_for
 
-
 PROJECT_ROOT = Path(__file__).resolve().parent
 DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "output"
 DEFAULT_VIDEO_DIR = PROJECT_ROOT / "videos"
@@ -44,12 +43,11 @@ REQUIRED_ENV_VARS = (
 
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+LOGGER = logging.getLogger(__name__)
 
 
 def build_parser():
-    parser = argparse.ArgumentParser(
-        description="Generate narrated Reddit videos with subtitles."
-    )
+    parser = argparse.ArgumentParser(description="Generate narrated Reddit videos with subtitles.")
     parser.add_argument("--subreddit", default=os.getenv("SUBREDDIT", "AITAH"))
     parser.add_argument("--limit", type=int, default=2)
     parser.add_argument("--chars-per-caption", type=int, default=22)
@@ -111,8 +109,14 @@ def build_parser():
 
 
 def validate_environment(use_script_cleanup=True, use_v3_directions=True):
+    """Validate credentials needed by the selected generation path.
+
+    V3 directions are created inside the optional OpenAI cleanup pass, so they
+    do not independently require an OpenAI key when cleanup is disabled. The
+    ``use_v3_directions`` parameter remains for backward compatibility.
+    """
     missing = [name for name in REQUIRED_ENV_VARS if not os.getenv(name)]
-    if (use_script_cleanup or use_v3_directions) and not os.getenv("OPENAI_API_KEY"):
+    if use_script_cleanup and not os.getenv("OPENAI_API_KEY"):
         missing.append("OPENAI_API_KEY")
 
     if missing:
@@ -163,7 +167,7 @@ def process_post(
             output_path=title_card_path,
             template_path=title_card_template,
         )
-        logging.info("Rendered title card for post %s at %s", index, rendered_title_card)
+        LOGGER.info("Rendered title card for post %s at %s", index, rendered_title_card)
 
     if use_script_cleanup:
         prepared_voiceover = prepare_voiceover(
@@ -181,7 +185,7 @@ def process_post(
         selected_voice_gender = prepared_voiceover["voice_gender"]
         speaker_segments = prepared_voiceover["segments"]
         cleaned_script_path.write_text(voiceover_text, encoding="utf-8")
-        logging.info("Cleaned voiceover script for post %s at %s", index, cleaned_script_path)
+        LOGGER.info("Cleaned voiceover script for post %s at %s", index, cleaned_script_path)
     else:
         prepared_voiceover = finalize_prepared_voiceover(
             {
@@ -233,7 +237,7 @@ def process_post(
         + "\n",
         encoding="utf-8",
     )
-    logging.info(
+    LOGGER.info(
         "Selected %s narrator voice for post %s (%s)",
         selected_voice_gender,
         index,
@@ -251,11 +255,11 @@ def process_post(
         spoken_title_text=spoken_title_text,
         return_metadata=True,
     )
-    logging.info("Generated voiceover for post %s at %s", index, audio_path)
+    LOGGER.info("Generated voiceover for post %s at %s", index, audio_path)
 
     inferred_title_card_duration = generation_result.get("spoken_title_duration")
     if inferred_title_card_duration:
-        logging.info(
+        LOGGER.info(
             "Measured spoken title duration for post %s: %.2fs",
             index,
             inferred_title_card_duration,
@@ -265,7 +269,7 @@ def process_post(
     video_clip = video_manager.get_video_clip(required_duration)
 
     try:
-        logging.info("Subtitles saved at %s", subtitles_path)
+        LOGGER.info("Subtitles saved at %s", subtitles_path)
 
         add_subtitles_to_video(
             video_clip,
@@ -279,7 +283,7 @@ def process_post(
     finally:
         video_clip.close()
 
-    logging.info("Final video created at %s", final_video_path)
+    LOGGER.info("Final video created at %s", final_video_path)
 
     post_metadata = {
         "index": index,
@@ -293,16 +297,14 @@ def process_post(
         "title_card_path": str(rendered_title_card) if rendered_title_card else None,
         "script_raw_path": str(raw_script_path),
         "script_vocab_path": str(vocab_script_path),
-        "script_cleaned_path": str(cleaned_script_path)
-        if use_script_cleanup
-        else None,
+        "script_cleaned_path": str(cleaned_script_path) if use_script_cleanup else None,
         "voice_choice_path": str(voice_choice_path),
     }
     post_metadata_path.write_text(
         json.dumps(post_metadata, indent=2),
         encoding="utf-8",
     )
-    logging.info("Saved post metadata for post %s at %s", index, post_metadata_path)
+    LOGGER.info("Saved post metadata for post %s at %s", index, post_metadata_path)
 
     return final_video_path
 
@@ -335,9 +337,19 @@ def main():
     video_managers = {}
     for index, post in enumerate(posts):
         post_text = post["text"] if isinstance(post, dict) else post
-        title = post.get("title", post_text.split(".", 1)[0]) if isinstance(post, dict) else post_text.split(".", 1)[0]
-        subreddit_name = post.get("subreddit", args.subreddit) if isinstance(post, dict) else args.subreddit
-        category = post.get("category", infer_category_for_subreddit(subreddit_name)) if isinstance(post, dict) else infer_category_for_subreddit(subreddit_name)
+        title = (
+            post.get("title", post_text.split(".", 1)[0])
+            if isinstance(post, dict)
+            else post_text.split(".", 1)[0]
+        )
+        subreddit_name = (
+            post.get("subreddit", args.subreddit) if isinstance(post, dict) else args.subreddit
+        )
+        category = (
+            post.get("category", infer_category_for_subreddit(subreddit_name))
+            if isinstance(post, dict)
+            else infer_category_for_subreddit(subreddit_name)
+        )
         post_id = post.get("id") if isinstance(post, dict) else None
         post_hash = post.get("hash") if isinstance(post, dict) else None
         category_config = get_category_config(category)
@@ -358,23 +370,23 @@ def main():
 
         try:
             final_video_path = process_post(
-                    index=index,
-                    post_text=post_text,
-                    output_dir=output_dir,
-                    video_manager=video_manager,
-                    chars_per_caption=args.chars_per_caption,
-                    font_path=args.font_path,
-                    script_model=args.script_model,
-                    use_script_cleanup=not args.skip_script_cleanup,
-                    use_v3_directions=not args.skip_v3_directions,
-                    title=title,
-                    category=category,
-                    subreddit_name=subreddit_name,
-                    target_max_seconds=category_config["target_max_seconds"],
-                    title_card_template=args.title_card_template,
-                    title_card_duration=args.title_card_duration,
-                    use_title_card=not args.skip_title_card,
-                )
+                index=index,
+                post_text=post_text,
+                output_dir=output_dir,
+                video_manager=video_manager,
+                chars_per_caption=args.chars_per_caption,
+                font_path=args.font_path,
+                script_model=args.script_model,
+                use_script_cleanup=not args.skip_script_cleanup,
+                use_v3_directions=not args.skip_v3_directions,
+                title=title,
+                category=category,
+                subreddit_name=subreddit_name,
+                target_max_seconds=category_config["target_max_seconds"],
+                title_card_template=args.title_card_template,
+                title_card_duration=args.title_card_duration,
+                use_title_card=not args.skip_title_card,
+            )
             created_videos.append(final_video_path)
             append_processed_post(
                 args.processed_posts_file,
@@ -389,18 +401,18 @@ def main():
                 processed_index["ids"].add(post_id)
             if post_hash:
                 processed_index["hashes"].add(post_hash)
-        except Exception as exc:
-            logging.exception("Error processing post %s: %s", index, exc)
+        except Exception:
+            LOGGER.exception("Error processing post %s", index)
 
     if not created_videos:
         raise RuntimeError("The pipeline did not produce any videos.")
 
-    logging.info("Created %s video(s) in %s", len(created_videos), output_dir)
+    LOGGER.info("Created %s video(s) in %s", len(created_videos), output_dir)
 
 
 if __name__ == "__main__":
     try:
         main()
     except Exception as exc:
-        logging.error("%s", exc)
+        LOGGER.error("%s", exc)
         raise SystemExit(1) from exc

@@ -1,12 +1,9 @@
 import hashlib
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
-
-DEFAULT_PROCESSED_POSTS_PATH = (
-    Path(__file__).resolve().parent / "data" / "processed_posts.jsonl"
-)
+DEFAULT_PROCESSED_POSTS_PATH = Path(__file__).resolve().parent / "data" / "processed_posts.jsonl"
 
 
 def normalize_hash_source(text, prefix_length=20):
@@ -56,9 +53,8 @@ def load_processed_post_index(path=None):
 def is_processed_post(processed_index, post_id=None, post_hash=None):
     normalized_id = str(post_id or "").strip()
     normalized_hash = str(post_hash or "").strip()
-    return (
-        (normalized_id and normalized_id in processed_index["ids"])
-        or (normalized_hash and normalized_hash in processed_index["hashes"])
+    return (normalized_id and normalized_id in processed_index["ids"]) or (
+        normalized_hash and normalized_hash in processed_index["hashes"]
     )
 
 
@@ -77,8 +73,7 @@ def append_processed_post(
         "title": str(title or "").strip() or "Untitled",
         "id": str(post_id or "").strip() or None,
         "hash": str(post_hash or "").strip(),
-        "processed_at": processed_at
-        or datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+        "processed_at": processed_at or datetime.now(UTC).replace(microsecond=0).isoformat(),
     }
     record.update(extra_fields)
 

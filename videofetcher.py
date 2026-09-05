@@ -5,7 +5,6 @@ from pathlib import Path
 from moviepy.video.io.VideoFileClip import VideoFileClip
 from yt_dlp import YoutubeDL
 
-
 HIGH_QUALITY_FORMAT = (
     "bestvideo[height>=2160][fps>=60]+bestaudio/"
     "bestvideo[height>=2160]+bestaudio/"
@@ -74,9 +73,7 @@ class VideoManager:
                 duration = video_clip.duration
                 video_clip.close()
 
-                self.downloaded_videos.append(
-                    {"path": file_path, "remaining_duration": duration}
-                )
+                self.downloaded_videos.append({"path": file_path, "remaining_duration": duration})
                 print(
                     f"Downloaded {info.get('title', url)} "
                     f"({duration // 60}m {duration % 60}s) to {file_path}"

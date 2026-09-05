@@ -12,10 +12,9 @@ from content_config import (
 )
 from processed_posts import compute_post_hash, is_processed_post
 
-
 load_dotenv()
 
-USER_AGENT = "autopost by /u/No-Arrival-2825"
+DEFAULT_USER_AGENT = "autopost-video-pipeline/1.0"
 DEFAULT_WORDS_PER_MINUTE = 165
 MAX_ASK_COMMENTS = 6
 
@@ -32,7 +31,7 @@ def get_reddit_client():
     return praw.Reddit(
         client_id=client_id,
         client_secret=client_secret,
-        user_agent=USER_AGENT,
+        user_agent=os.getenv("REDDIT_USER_AGENT", DEFAULT_USER_AGENT),
     )
 
 

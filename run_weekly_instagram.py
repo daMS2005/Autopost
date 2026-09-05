@@ -8,7 +8,6 @@ from pathlib import Path
 
 from content_config import CATEGORY_CONFIGS, normalize_subreddit_name
 
-
 PROJECT_ROOT = Path(__file__).resolve().parent
 DEFAULT_QUEUE_PATH = PROJECT_ROOT / "data" / "local_schedules" / "instagram_queue.json"
 

@@ -15,7 +15,6 @@ from text_to_speech import (
     get_default_max_chars,
 )
 
-
 load_dotenv()
 
 ELEVENLABS_VOICES_URL = "https://api.elevenlabs.io/v1/voices"
@@ -138,9 +137,7 @@ def generate_preview(
     selected_voice_id = voice_id or os.getenv("ELEVENLABS_VOICE_ID") or DEFAULT_ELEVENLABS_VOICE_ID
     selected_model = model_id or os.getenv("ELEVENLABS_TTS_MODEL") or DEFAULT_ELEVENLABS_TTS_MODEL
     selected_output_format = (
-        output_format
-        or os.getenv("ELEVENLABS_OUTPUT_FORMAT")
-        or DEFAULT_ELEVENLABS_OUTPUT_FORMAT
+        output_format or os.getenv("ELEVENLABS_OUTPUT_FORMAT") or DEFAULT_ELEVENLABS_OUTPUT_FORMAT
     )
     selected_language_code = language_code or os.getenv("ELEVENLABS_LANGUAGE_CODE")
     selected_seed = seed if seed is not None else os.getenv("ELEVENLABS_SEED")
@@ -198,9 +195,7 @@ def generate_preview_grid(text, experiments, output_dir=DEFAULT_VOICE_LAB_OUTPUT
             model_id=experiment.get("model_id"),
             output_format=experiment.get("output_format"),
             voice_settings=experiment.get("voice_settings"),
-            apply_text_normalization=experiment.get(
-                "apply_text_normalization", "auto"
-            ),
+            apply_text_normalization=experiment.get("apply_text_normalization", "auto"),
             language_code=experiment.get("language_code"),
             seed=experiment.get("seed"),
             output_dir=output_dir,

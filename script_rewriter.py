@@ -1,10 +1,10 @@
-import os
 import json
+import os
 import re
 
 from openai import OpenAI
-from voice_registry import build_voice_catalog_prompt, strip_voice_marker
 
+from voice_registry import build_voice_catalog_prompt, strip_voice_marker
 
 DEFAULT_SCRIPT_MODEL = "gpt-5-mini"
 DEFAULT_WORDS_PER_MINUTE = 165
@@ -250,13 +250,13 @@ def _infer_ask_segments(script, voice_gender):
         )
 
     return segments or [
-            {
-                "speaker": "Narrator",
-                "voice_gender": voice_gender,
-                "text": text,
-                "voice_name": None,
-            }
-        ]
+        {
+            "speaker": "Narrator",
+            "voice_gender": voice_gender,
+            "text": text,
+            "voice_name": None,
+        }
+    ]
 
 
 def finalize_prepared_voiceover(prepared_voiceover, category="story", target_max_seconds=None):

@@ -2,10 +2,10 @@ import logging
 import os
 import random
 
-from moviepy.video.io.VideoFileClip import VideoFileClip
 from moviepy.video.compositing.CompositeVideoClip import concatenate_videoclips
+from moviepy.video.io.VideoFileClip import VideoFileClip
 
-
+LOGGER = logging.getLogger(__name__)
 GENERATED_VIDEO_PREFIXES = (
     "final_video",
     "title_card_overlay",
@@ -29,7 +29,7 @@ class VideoManager:
                 continue
 
             if filename.startswith(GENERATED_VIDEO_PREFIXES):
-                logging.info("Skipping generated video as source footage: %s", filename)
+                LOGGER.info("Skipping generated video as source footage: %s", filename)
                 continue
 
             file_path = os.path.join(download_path, filename)
@@ -57,7 +57,7 @@ class VideoManager:
             video_clip.close()
 
         if not self.videos:
-            logging.warning("No videos found in %s.", download_path)
+            LOGGER.warning("No videos found in %s.", download_path)
 
     def get_video_clip(self, required_duration):
         """Get a clip of the required duration while skipping used portions."""
@@ -70,7 +70,7 @@ class VideoManager:
         source_duration_needed = required_duration * self.background_speed
 
         if all(video["duration"] < source_duration_needed for video in self.videos):
-            logging.info(
+            LOGGER.info(
                 "No single source video is long enough for %.2fs; looping background footage.",
                 source_duration_needed,
             )
@@ -133,7 +133,7 @@ class VideoManager:
                 clip_start + required_duration,
             )
 
-        logging.info("Video '%s' fully used, resetting usage.", video["path"])
+        LOGGER.info("Video '%s' fully used, resetting usage.", video["path"])
         video["used_portions"] = []
         return None
 

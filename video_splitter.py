@@ -3,9 +3,9 @@ import math
 import re
 from pathlib import Path
 
-from moviepy.video.VideoClip import ImageClip
 from moviepy.video.compositing.CompositeVideoClip import concatenate_videoclips
 from moviepy.video.io.VideoFileClip import VideoFileClip
+from moviepy.video.VideoClip import ImageClip
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter
 
 from subtitle_editor import (
@@ -14,7 +14,6 @@ from subtitle_editor import (
     DEFAULT_VIDEO_CRF,
 )
 from title_card import load_font
-
 
 DEFAULT_TARGET_PART_SECONDS = 60.0
 DEFAULT_MIN_LAST_PART_SECONDS = 35.0
@@ -76,11 +75,7 @@ def build_part_hook(part_number, total_parts):
 
 def build_part_caption(title, part_number, total_parts, category=None, subreddit=None):
     normalized_title = " ".join(str(title or "").split()).strip() or "Untitled"
-    title_line = (
-        f"{normalized_title} (Part {part_number})"
-        if total_parts > 1
-        else normalized_title
-    )
+    title_line = f"{normalized_title} (Part {part_number})" if total_parts > 1 else normalized_title
     hook = build_part_hook(part_number, total_parts)
     hashtags = build_default_hashtags(category=category, subreddit=subreddit)
     return {
@@ -134,7 +129,9 @@ def _build_cover_background(background_frame=None):
     return background
 
 
-def render_part_cover(title_card_path, output_path, *, part_number, total_parts, background_frame=None):
+def render_part_cover(
+    title_card_path, output_path, *, part_number, total_parts, background_frame=None
+):
     title_card = Path(title_card_path).expanduser().resolve()
     if not title_card.exists():
         return None
@@ -165,11 +162,7 @@ def render_part_cover(title_card_path, output_path, *, part_number, total_parts,
     _rounded_rectangle(draw, shadow_box, 32, COVER_SHADOW)
     cover.alpha_composite(card, (card_x, card_y))
 
-    badge_text = (
-        f"PART {part_number}/{total_parts}"
-        if total_parts > 1
-        else "FULL STORY"
-    )
+    badge_text = f"PART {part_number}/{total_parts}" if total_parts > 1 else "FULL STORY"
     badge_font = load_font(56)
     badge_bbox = draw.textbbox((0, 0), badge_text, font=badge_font)
     badge_width = badge_bbox[2] - badge_bbox[0] + 72
@@ -293,7 +286,10 @@ def split_video_for_publishing(
         total_parts = len(parts)
         fps = max(
             24,
-            min(int(round(getattr(video, "fps", None) or DEFAULT_MAX_RENDER_FPS)), DEFAULT_MAX_RENDER_FPS),
+            min(
+                round(getattr(video, "fps", None) or DEFAULT_MAX_RENDER_FPS),
+                DEFAULT_MAX_RENDER_FPS,
+            ),
         )
         slug = sanitize_slug(title)
 
